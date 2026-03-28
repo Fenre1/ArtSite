@@ -1,0 +1,17 @@
+{
+  "title": "Mozaiekvogel",
+  "slug": "mozaiekvogel",
+  "type": "mosaic",
+  "price": null,
+  "price_label": "Prijs op aanvraag",
+  "dimensions": "30 cm",
+  "description": "Vogeltje",
+  "cover_image": "WhatsApp Image 2026-03-28 at 18.30.29 (1).jpeg",
+  "additional_images": [
+    "WhatsApp Image 2026-03-28 at 18.30.29.jpeg"
+  ],
+  "featured": false,
+  "availability": "available",
+  "date_added": "2026-03-28T18:33:16",
+  "sort_order": 5
+}

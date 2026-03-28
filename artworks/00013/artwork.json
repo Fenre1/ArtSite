@@ -1,0 +1,18 @@
+{
+  "title": "Ballerina",
+  "slug": "ballerina",
+  "type": "mosaic",
+  "price": null,
+  "price_label": "Prijs op aanvraag",
+  "dimensions": "90 cm",
+  "description": "Ballerina zonder cappuccina",
+  "cover_image": "WhatsApp Image 2026-03-28 at 18.30.30 (6).jpeg",
+  "additional_images": [
+    "WhatsApp Image 2026-03-28 at 18.30.30 (7).jpeg",
+    "WhatsApp Image 2026-03-28 at 18.30.30 (8).jpeg"
+  ],
+  "featured": false,
+  "availability": "available",
+  "date_added": "2026-03-28T18:40:52",
+  "sort_order": 13
+}

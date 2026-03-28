@@ -22,6 +22,8 @@ templates/
   about.html
 site.json
 build.py
+artwork_entry_qt.py
+requirements-gui.txt
 dist/
 ```
 
@@ -33,7 +35,29 @@ python build.py
 
 The generated site is written to `dist/`.
 
-## Adding a new artwork
+## Desktop entry tool
+
+Install the desktop dependency once:
+
+```bash
+pip install -r requirements-gui.txt
+```
+
+Start the Qt artwork entry tool with:
+
+```bash
+python artwork_entry_qt.py
+```
+
+The tool lets you:
+
+- fill in the artwork fields
+- select one or more images from Windows Explorer
+- drag and drop image files into the image list
+- choose which image should be the main gallery image
+- save everything directly into a new folder under `artworks/`
+
+## Adding a new artwork manually
 
 1. Create a new folder inside `artworks/`.
 2. Add the artwork images to that folder.
@@ -55,12 +79,12 @@ Example `artwork.json`:
   "additional_images": ["detail.jpg"],
   "featured": false,
   "availability": "available",
-  "date_added": "2026-03-28",
+  "date_added": "2026-03-28T14:30:00",
   "sort_order": 10
 }
 ```
 
-`date_added` is required and must use the `YYYY-MM-DD` format so the gallery can sort by newly added work.
+`date_added` is required and may be either `YYYY-MM-DD` or a full ISO date-time like `YYYY-MM-DDTHH:MM:SS`.
 
 ## Site settings
 

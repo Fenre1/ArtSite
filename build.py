@@ -183,10 +183,10 @@ def parse_date_added(raw_value: Any, metadata_file: Path) -> datetime:
         raise SystemExit(f"Missing required 'date_added' in {metadata_file}")
 
     try:
-        return datetime.strptime(date_string, DATE_FORMAT)
+        return datetime.fromisoformat(date_string)
     except ValueError as error:
         raise SystemExit(
-            f"Invalid 'date_added' in {metadata_file}. Use YYYY-MM-DD."
+            f"Invalid 'date_added' in {metadata_file}. Use YYYY-MM-DD or a full ISO date-time."
         ) from error
 
 
@@ -255,8 +255,8 @@ def normalize_artwork(folder: Path, raw: dict[str, Any], base_path: str) -> dict
         "availability_label": availability_label,
         "availability_class": availability_class,
         "sort_order": sort_order,
-        "date_added_iso": date_added.strftime(DATE_FORMAT),
-        "date_added_sort": int(date_added.strftime("%Y%m%d")),
+        "date_added_iso": date_added.isoformat(timespec="minutes"),
+        "date_added_sort": int(date_added.timestamp()),
         "url": build_url(base_path, f"art/{slug}", trailing_slash=True),
         "output_path": DIST_DIR / "art" / slug / "index.html",
         "cover_url": copied_urls[0],
