@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import html
 import json
+import os
 import re
 import shutil
 from datetime import datetime
@@ -150,6 +151,9 @@ def load_site() -> dict[str, Any]:
     }
 
     merged = {**defaults, **site}
+    site_base_path = os.environ.get("SITE_BASE_PATH")
+    if site_base_path is not None:
+        merged["base_path"] = site_base_path
     merged["copyright_name"] = merged["artist_name"]
     return merged
 
