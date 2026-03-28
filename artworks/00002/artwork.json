@@ -1,17 +1,17 @@
 {
-  "title": "Zonder titel II",
+  "title": "Vis!",
   "slug": "untitled-study-ii",
   "type": "other",
   "price": null,
   "price_label": "Prijs op aanvraag",
   "dimensions": "Afmetingen op aanvraag",
-  "description": "Voeg een korte beschrijving toe van het werk, de materialen of het verhaal achter dit stuk.",
+  "description": "Visje",
   "cover_image": "WhatsApp Image 2025-01-19 at 19.36.58.jpeg",
   "additional_images": [
     "WhatsApp Image 2025-01-19 at 19.36.58 (1).jpeg"
   ],
   "featured": true,
   "availability": "available",
-  "date_added": "2025-01-19",
+  "date_added": "2025-01-19T00:00:00",
   "sort_order": 2
 }

@@ -55,6 +55,8 @@ The tool lets you:
 - select one or more images from Windows Explorer
 - drag and drop image files into the image list
 - choose which image should be the main gallery image
+- switch to the existing-artworks tab to open an artwork by folder id, title, and added date
+- edit the loaded artwork in the same form and save the changes back to its folder
 - save everything directly into a new folder under `artworks/`
 
 ## Adding a new artwork manually
