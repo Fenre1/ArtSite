@@ -1,0 +1,16 @@
+{
+  "title": "Untitled Study II",
+  "slug": "untitled-study-ii",
+  "type": "other",
+  "price": null,
+  "price_label": "Price on request",
+  "dimensions": "Dimensions on request",
+  "description": "Add a short description of the artwork, materials, or story behind the piece.",
+  "cover_image": "WhatsApp Image 2025-01-19 at 19.36.58.jpeg",
+  "additional_images": [
+    "WhatsApp Image 2025-01-19 at 19.36.58 (1).jpeg"
+  ],
+  "featured": true,
+  "availability": "available",
+  "sort_order": 2
+}

@@ -1,0 +1,50 @@
+<nav class="breadcrumb" aria-label="Breadcrumb">
+  <a href="{{ home_url }}">Gallery</a>
+  <span>/</span>
+  <span>{{ artwork_title }}</span>
+</nav>
+
+<section class="artwork-detail">
+  <div class="artwork-main-media">
+    <img
+      class="artwork-main-image"
+      src="{{ main_image_url }}"
+      alt="{{ artwork_title }}"
+      loading="eager"
+      decoding="async"
+    >
+  </div>
+
+  <div class="artwork-meta">
+    <p class="eyebrow">{{ artwork_type }}</p>
+    <h1 class="page-title page-title--detail">{{ artwork_title }}</h1>
+    <p class="availability-pill {{ availability_class }}">{{ availability_label }}</p>
+
+    <dl class="artwork-facts">
+      <div>
+        <dt>Price</dt>
+        <dd>{{ artwork_price }}</dd>
+      </div>
+      <div>
+        <dt>Dimensions</dt>
+        <dd>{{ artwork_dimensions }}</dd>
+      </div>
+      <div>
+        <dt>Type</dt>
+        <dd>{{ artwork_type }}</dd>
+      </div>
+      <div>
+        <dt>Status</dt>
+        <dd>{{ availability_label }}</dd>
+      </div>
+    </dl>
+
+    <div class="rich-text">
+      {{ artwork_description }}
+    </div>
+
+    <a class="button" href="{{ contact_url }}">{{ contact_label }}</a>
+  </div>
+</section>
+
+{{ additional_gallery_section }}

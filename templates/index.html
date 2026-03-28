@@ -1,0 +1,31 @@
+<section class="catalog-intro">
+  <p class="eyebrow">Catalogue</p>
+  <h1 class="page-title">{{ artist_name }}</h1>
+  <p class="page-lead">{{ tagline }}</p>
+  <p class="catalog-intro__body">{{ intro }}</p>
+</section>
+
+<section class="featured-section" aria-labelledby="featured-heading">
+  <div class="section-heading">
+    <p class="section-kicker">Featured</p>
+    <h2 id="featured-heading">A closer look at selected works</h2>
+  </div>
+  <div class="featured-grid">
+    {{ featured_cards }}
+  </div>
+</section>
+
+<section class="gallery-section" aria-labelledby="gallery-heading" data-gallery-root>
+  <div class="section-heading">
+    <p class="section-kicker">Collection</p>
+    <h2 id="gallery-heading">Browse the full gallery</h2>
+  </div>
+
+  {{ filter_controls }}
+
+  <div class="gallery-grid" data-gallery-grid>
+    {{ gallery_cards }}
+  </div>
+
+  <p class="empty-state" data-empty-state hidden>No artworks match the current filters.</p>
+</section>
