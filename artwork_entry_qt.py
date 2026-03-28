@@ -9,6 +9,7 @@ from pathlib import Path
 
 try:
     from PySide6.QtCore import QDateTime, Qt, Signal
+    from PySide6.QtGui import QPixmap
     from PySide6.QtWidgets import (
         QAbstractItemView,
         QApplication,
@@ -326,6 +327,55 @@ class ImageDropList(QListWidget):
         super().dropEvent(event)
 
 
+class ImagePreviewLabel(QLabel):
+    def __init__(self) -> None:
+        super().__init__()
+        self._original_pixmap: QPixmap | None = None
+        self.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.setMinimumHeight(280)
+        self.setWordWrap(True)
+        self.setStyleSheet(
+            "QLabel {"
+            "border: 1px solid #bcbcbc;"
+            "border-radius: 6px;"
+            "background: #fafafa;"
+            "padding: 12px;"
+            "}"
+        )
+        self.show_placeholder("Nog geen afbeelding geselecteerd.")
+
+    def show_placeholder(self, message: str) -> None:
+        self._original_pixmap = None
+        self.clear()
+        self.setText(message)
+
+    def show_image(self, path: Path) -> None:
+        pixmap = QPixmap(str(path))
+        if pixmap.isNull():
+            self.show_placeholder(f"Voorvertoning niet beschikbaar voor:\n{path.name}")
+            return
+
+        self._original_pixmap = pixmap
+        self.setText("")
+        self._refresh_pixmap()
+
+    def resizeEvent(self, event) -> None:  # type: ignore[override]
+        super().resizeEvent(event)
+        self._refresh_pixmap()
+
+    def _refresh_pixmap(self) -> None:
+        if self._original_pixmap is None:
+            return
+
+        scaled = self._original_pixmap.scaled(
+            max(self.width() - 24, 1),
+            max(self.height() - 24, 1),
+            Qt.AspectRatioMode.KeepAspectRatio,
+            Qt.TransformationMode.SmoothTransformation,
+        )
+        self.setPixmap(scaled)
+
+
 class ArtworkEditor(QWidget):
     artwork_saved = Signal(str)
 
@@ -334,6 +384,7 @@ class ArtworkEditor(QWidget):
         self.mode = mode
         self.image_paths: list[Path] = []
         self.main_image_path: Path | None = None
+        self.preview_image_path: Path | None = None
         self.slug_was_edited = False
         self.current_folder: Path | None = None
         self.current_sort_order: int | None = None
@@ -350,6 +401,7 @@ class ArtworkEditor(QWidget):
         self.dimensions_input = QLineEdit()
         self.description_input = QTextEdit()
         self.image_list = ImageDropList()
+        self.preview_label = ImagePreviewLabel()
         self.status_label = QLabel()
         self.folder_preview_label = QLabel()
 
@@ -404,7 +456,8 @@ class ArtworkEditor(QWidget):
 
         images_info = QLabel(
             "Sleep afbeeldingen hierheen, of kies bestanden via Verkenner. "
-            "Selecteer daarna welke afbeelding de hoofdafbeelding moet zijn."
+            "Klik op een afbeelding om die groot te bekijken en selecteer daarna "
+            "welke afbeelding de hoofdafbeelding moet zijn."
         )
         images_info.setWordWrap(True)
 
@@ -431,6 +484,7 @@ class ArtworkEditor(QWidget):
         image_button_row.addStretch(1)
 
         images_layout = QVBoxLayout()
+        images_layout.addWidget(self.preview_label)
         images_layout.addWidget(images_info)
         images_layout.addWidget(self.image_list)
         images_layout.addLayout(image_button_row)
@@ -459,6 +513,7 @@ class ArtworkEditor(QWidget):
         self.save_button.clicked.connect(self.save_artwork)
         self.reset_button.clicked.connect(self.reset_form)
         self.image_list.files_dropped.connect(self.add_images)
+        self.image_list.currentItemChanged.connect(self.handle_current_image_changed)
         self.image_list.itemDoubleClicked.connect(self.handle_item_double_click)
 
     def handle_title_changed(self, value: str) -> None:
@@ -504,6 +559,7 @@ class ArtworkEditor(QWidget):
 
         if self.image_paths and self.main_image_path is None:
             self.main_image_path = self.image_paths[0]
+            self.preview_image_path = self.main_image_path
 
         self.update_image_list()
 
@@ -527,6 +583,12 @@ class ArtworkEditor(QWidget):
             item.setToolTip(str(path))
             item.setData(Qt.ItemDataRole.UserRole, str(path))
             self.image_list.addItem(item)
+
+        if self.preview_image_path not in self.image_paths:
+            self.preview_image_path = self.main_image_path or (self.image_paths[0] if self.image_paths else None)
+
+        self.sync_list_selection_to_preview()
+        self.update_preview()
 
         if not self.image_paths:
             self.status_label.setText("Nog geen afbeeldingen geselecteerd.")
@@ -562,11 +624,53 @@ class ArtworkEditor(QWidget):
             return
 
         self.main_image_path = Path(selected[0].data(Qt.ItemDataRole.UserRole))
+        self.preview_image_path = self.main_image_path
         self.update_image_list()
 
     def handle_item_double_click(self, item: QListWidgetItem) -> None:
         self.main_image_path = Path(item.data(Qt.ItemDataRole.UserRole))
+        self.preview_image_path = self.main_image_path
         self.update_image_list()
+
+    def handle_current_image_changed(
+        self,
+        current: QListWidgetItem | None,
+        previous: QListWidgetItem | None,
+    ) -> None:
+        del previous
+
+        if current is None:
+            self.preview_image_path = self.main_image_path
+        else:
+            self.preview_image_path = Path(current.data(Qt.ItemDataRole.UserRole))
+
+        self.update_preview()
+
+    def sync_list_selection_to_preview(self) -> None:
+        if self.preview_image_path is None:
+            self.image_list.clearSelection()
+            return
+
+        for row in range(self.image_list.count()):
+            item = self.image_list.item(row)
+            if item is None:
+                continue
+            if Path(item.data(Qt.ItemDataRole.UserRole)) == self.preview_image_path:
+                self.image_list.setCurrentItem(item)
+                return
+
+    def update_preview(self) -> None:
+        if self.preview_image_path is None:
+            self.preview_label.show_placeholder("Nog geen afbeelding geselecteerd.")
+            return
+
+        if not self.preview_image_path.exists():
+            self.preview_label.show_placeholder(
+                f"Afbeelding niet gevonden:\n{self.preview_image_path.name}"
+            )
+            return
+
+        self.preview_label.show_image(self.preview_image_path)
 
     def refresh_folder_info(self) -> None:
         if self.is_edit_mode:
@@ -766,6 +870,7 @@ class ArtworkEditor(QWidget):
         self.description_input.clear()
         self.image_paths = []
         self.main_image_path = None
+        self.preview_image_path = None
         self.update_image_list()
 
     def clear_loaded_artwork(self) -> None:
@@ -808,6 +913,7 @@ class ArtworkEditor(QWidget):
         self.description_input.setPlainText(record.description)
         self.image_paths = ordered_paths
         self.main_image_path = ordered_paths[0] if ordered_paths else None
+        self.preview_image_path = self.main_image_path
         self.slug_was_edited = True
         self.refresh_folder_info()
         self.update_image_list()
