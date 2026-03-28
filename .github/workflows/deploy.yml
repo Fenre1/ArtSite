@@ -18,12 +18,22 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      PAGES_ENABLEMENT_TOKEN: ${{ secrets.PAGES_ENABLEMENT_TOKEN }}
     steps:
       - name: Checkout
         uses: actions/checkout@v5
 
       - name: Setup Pages
+        if: ${{ env.PAGES_ENABLEMENT_TOKEN == '' }}
         uses: actions/configure-pages@v5
+
+      - name: Setup Pages and enable GitHub Pages
+        if: ${{ env.PAGES_ENABLEMENT_TOKEN != '' }}
+        uses: actions/configure-pages@v5
+        with:
+          token: ${{ env.PAGES_ENABLEMENT_TOKEN }}
+          enablement: true
 
       - name: Setup Python
         uses: actions/setup-python@v5

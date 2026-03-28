@@ -82,3 +82,10 @@ If `custom_domain` is set, the build writes a `CNAME` file into `dist/`.
 The GitHub Actions workflow in `.github/workflows/deploy.yml` builds the site and deploys `dist/` to GitHub Pages.
 
 In the repository settings, set GitHub Pages to use **GitHub Actions** as the source.
+
+If Pages has not been enabled for the repository yet, you have two options:
+
+1. Enable GitHub Pages manually in the repository settings, then keep using the default workflow.
+2. Add a repository secret named `PAGES_ENABLEMENT_TOKEN` and let the workflow enable Pages automatically.
+
+For automatic enablement, the token must be something other than the default `GITHUB_TOKEN`. According to `actions/configure-pages`, a Personal Access Token needs `repo` scope or Pages write permission.
