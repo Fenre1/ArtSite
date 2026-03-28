@@ -491,7 +491,7 @@ def render_filter_controls(artworks: list[dict[str, Any]]) -> str:
         )
 
     if stats["has_priced_artworks"]:
-        note_html = '<p class="filter-note">Werken zonder prijs blijven zichtbaar zolang het volledige bereik is geselecteerd.</p>'
+        note_html = '<p class="filter-note">Werken zonder prijs blijven zichtbaar zolang het volledige bereik is ingevuld.</p>'
     else:
         note_html = '<p class="filter-note">Voeg prijzen toe in artwork.json om op prijs te filteren of te sorteren.</p>'
 
@@ -500,18 +500,20 @@ def render_filter_controls(artworks: list[dict[str, Any]]) -> str:
             '<div class="filter-row">',
             '<div class="filter-label">Prijsbereik</div>',
             '<div class="price-range">',
-            '<div class="price-range__values">',
-            '<div class="range-chip"><span>Min</span><strong data-price-output="min">EUR 0</strong></div>',
-            f'<div class="range-chip"><span>Max</span><strong data-price-output="max">EUR {stats["slider_max"]}</strong></div>',
-            '</div>',
-            '<div class="slider-group">',
-            '<label class="slider-field">',
-            '<span class="slider-label">Minimumprijs</span>',
-            f'<input class="slider-input" type="range" min="{stats["slider_min"]}" max="{stats["slider_max"]}" value="{stats["slider_min"]}" step="{stats["slider_step"]}" data-price-slider="min"{disabled_attr}>',
+            '<div class="price-range__inputs">',
+            '<label class="price-field">',
+            '<span class="price-field__label">Min prijs</span>',
+            '<span class="price-input-wrap">',
+            '<span class="price-input-prefix">EUR</span>',
+            f'<input class="price-input" type="number" min="{stats["slider_min"]}" max="{stats["slider_max"]}" value="{stats["slider_min"]}" step="{stats["slider_step"]}" inputmode="numeric" data-price-input="min"{disabled_attr}>',
+            '</span>',
             '</label>',
-            '<label class="slider-field">',
-            '<span class="slider-label">Maximumprijs</span>',
-            f'<input class="slider-input" type="range" min="{stats["slider_min"]}" max="{stats["slider_max"]}" value="{stats["slider_max"]}" step="{stats["slider_step"]}" data-price-slider="max"{disabled_attr}>',
+            '<label class="price-field">',
+            '<span class="price-field__label">Max prijs</span>',
+            '<span class="price-input-wrap">',
+            '<span class="price-input-prefix">EUR</span>',
+            f'<input class="price-input" type="number" min="{stats["slider_min"]}" max="{stats["slider_max"]}" value="{stats["slider_max"]}" step="{stats["slider_step"]}" inputmode="numeric" data-price-input="max"{disabled_attr}>',
+            '</span>',
             '</label>',
             '</div>',
             note_html,
