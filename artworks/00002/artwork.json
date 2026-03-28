@@ -1,16 +1,17 @@
 {
-  "title": "Untitled Study II",
+  "title": "Zonder titel II",
   "slug": "untitled-study-ii",
   "type": "other",
   "price": null,
-  "price_label": "Price on request",
-  "dimensions": "Dimensions on request",
-  "description": "Add a short description of the artwork, materials, or story behind the piece.",
+  "price_label": "Prijs op aanvraag",
+  "dimensions": "Afmetingen op aanvraag",
+  "description": "Voeg een korte beschrijving toe van het werk, de materialen of het verhaal achter dit stuk.",
   "cover_image": "WhatsApp Image 2025-01-19 at 19.36.58.jpeg",
   "additional_images": [
     "WhatsApp Image 2025-01-19 at 19.36.58 (1).jpeg"
   ],
   "featured": true,
   "availability": "available",
+  "date_added": "2025-01-19",
   "sort_order": 2
 }

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import html
 import json
+import math
 import os
 import re
 import shutil
@@ -20,15 +21,16 @@ DIST_DIR = ROOT / "dist"
 PLACEHOLDER_PATTERN = re.compile(r"{{\s*([a-zA-Z0-9_]+)\s*}}")
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp", ".gif", ".avif"}
 TYPE_LABELS = {
-    "painting": "Painting",
-    "mosaic": "Mosaic",
-    "sculpture": "Sculpture",
-    "other": "Other",
+    "painting": "Schilderij",
+    "mosaic": "Mozaiek",
+    "sculpture": "Sculptuur",
+    "other": "Overig",
 }
 AVAILABILITY_LABELS = {
-    "available": ("Available", "is-available"),
-    "sold": ("Sold", "is-sold"),
+    "available": ("Beschikbaar", "is-available"),
+    "sold": ("Verkocht", "is-sold"),
 }
+DATE_FORMAT = "%Y-%m-%d"
 
 
 def load_json(path: Path) -> dict[str, Any]:
@@ -103,21 +105,8 @@ def format_currency(value: float) -> str:
 
 def format_price(price: Any, price_label: str = "") -> str:
     if price is None:
-        return escape_text(price_label) if price_label else "Price on request"
+        return price_label or "Prijs op aanvraag"
     return format_currency(float(price))
-
-
-def price_band(price: Any) -> str:
-    if price is None:
-        return "unknown"
-    amount = float(price)
-    if amount < 100:
-        return "under-100"
-    if amount < 300:
-        return "100-300"
-    if amount < 700:
-        return "300-700"
-    return "700-plus"
 
 
 def slugify(value: str) -> str:
@@ -137,11 +126,11 @@ def write_text(path: Path, content: str) -> None:
 def load_site() -> dict[str, Any]:
     site = load_json(SITE_FILE)
     defaults = {
-        "site_name": "Art Portfolio",
-        "artist_name": "Artist Name",
-        "tagline": "Original paintings, mosaics, sculptures, and mixed-media works.",
-        "intro": "Browse the catalogue and contact the artist directly for availability.",
-        "about": "Add a short artist bio here.",
+        "site_name": "Kunstportfolio",
+        "artist_name": "Naam van de kunstenaar",
+        "tagline": "Originele schilderijen, mozaiek, sculpturen en gemengde technieken.",
+        "intro": "Bekijk het overzicht van het werk en neem direct contact op voor beschikbaarheid.",
+        "about": "Voeg hier een korte biografie van de kunstenaar toe.",
         "atelier_location": "",
         "email": "",
         "phone": "",
@@ -178,7 +167,6 @@ def copy_artwork_images(
     ensure_directory(destination)
 
     copied_urls: list[str] = []
-
     for index, image_name in enumerate(image_names, start=1):
         source = folder / image_name
         extension = source.suffix.lower()
@@ -189,22 +177,34 @@ def copy_artwork_images(
     return copied_urls
 
 
+def parse_date_added(raw_value: Any, metadata_file: Path) -> datetime:
+    date_string = str(raw_value or "").strip()
+    if not date_string:
+        raise SystemExit(f"Missing required 'date_added' in {metadata_file}")
+
+    try:
+        return datetime.strptime(date_string, DATE_FORMAT)
+    except ValueError as error:
+        raise SystemExit(
+            f"Invalid 'date_added' in {metadata_file}. Use YYYY-MM-DD."
+        ) from error
+
+
 def normalize_artwork(folder: Path, raw: dict[str, Any], base_path: str) -> dict[str, Any]:
+    metadata_file = folder / "artwork.json"
     images = discover_images(folder)
     if not images:
         raise SystemExit(f"No artwork images found in {folder}")
 
-    title = str(raw.get("title") or f"Untitled {folder.name}").strip()
+    title = str(raw.get("title") or f"Zonder titel {folder.name}").strip()
     slug = slugify(str(raw.get("slug") or title or folder.name))
     type_key = str(raw.get("type") or "other").strip().lower()
     if type_key not in TYPE_LABELS:
-        raise SystemExit(f"Unsupported artwork type '{type_key}' in {folder / 'artwork.json'}")
+        raise SystemExit(f"Unsupported artwork type '{type_key}' in {metadata_file}")
 
     availability_key = str(raw.get("availability") or "available").strip().lower()
     if availability_key not in AVAILABILITY_LABELS:
-        raise SystemExit(
-            f"Unsupported availability '{availability_key}' in {folder / 'artwork.json'}"
-        )
+        raise SystemExit(f"Unsupported availability '{availability_key}' in {metadata_file}")
 
     cover_image = str(raw.get("cover_image") or images[0]).strip()
     if cover_image not in images:
@@ -229,31 +229,34 @@ def normalize_artwork(folder: Path, raw: dict[str, Any], base_path: str) -> dict
     if isinstance(price, str) and price.strip():
         price = float(price)
     if price is not None and not isinstance(price, (int, float)):
-        raise SystemExit(f"Price must be a number or null in {folder / 'artwork.json'}")
+        raise SystemExit(f"Price must be a number or null in {metadata_file}")
 
+    sort_order = int(raw.get("sort_order", 999))
+    date_added = parse_date_added(raw.get("date_added"), metadata_file)
     copied_urls = copy_artwork_images(folder, slug, ordered_images, base_path)
     availability_label, availability_class = AVAILABILITY_LABELS[availability_key]
     price_label = str(raw.get("price_label") or "").strip()
     description = str(raw.get("description") or "").strip()
-    dimensions = str(raw.get("dimensions") or "").strip() or "Dimensions on request"
+    dimensions = str(raw.get("dimensions") or "").strip() or "Afmetingen op aanvraag"
 
     return {
         "title": title,
         "slug": slug,
         "type_key": type_key,
         "type_label": TYPE_LABELS[type_key],
-        "price": price,
+        "price": float(price) if price is not None else None,
         "price_display": format_price(price, price_label),
         "price_preview": format_price(price, price_label) if price is not None or price_label else "",
-        "price_band": price_band(price),
         "dimensions": dimensions,
-        "description": description or "Description coming soon.",
-        "description_html": paragraph_html(description, "Description coming soon."),
+        "description": description or "Beschrijving volgt binnenkort.",
+        "description_html": paragraph_html(description, "Beschrijving volgt binnenkort."),
         "featured": bool(raw.get("featured", False)),
         "availability_key": availability_key,
         "availability_label": availability_label,
         "availability_class": availability_class,
-        "sort_order": int(raw.get("sort_order", 999)),
+        "sort_order": sort_order,
+        "date_added_iso": date_added.strftime(DATE_FORMAT),
+        "date_added_sort": int(date_added.strftime("%Y%m%d")),
         "url": build_url(base_path, f"art/{slug}", trailing_slash=True),
         "output_path": DIST_DIR / "art" / slug / "index.html",
         "cover_url": copied_urls[0],
@@ -286,9 +289,9 @@ def load_artworks(base_path: str) -> list[dict[str, Any]]:
 
 def nav_links(site: dict[str, Any], current_page: str) -> str:
     links = [
-        ("Gallery", build_url(site["base_path"], "", trailing_slash=True), current_page == "home"),
+        ("Galerij", build_url(site["base_path"], "", trailing_slash=True), current_page == "home"),
         (
-            "About / Contact",
+            "Over / Contact",
             build_url(site["base_path"], "about", trailing_slash=True),
             current_page == "about",
         ),
@@ -325,7 +328,7 @@ def render_footer(site: dict[str, Any]) -> str:
 
     return (
         f'<div class="footer-links">{footer_links}</div>'
-        f'<div class="footer-meta">(c) {year} {escape_text(site["copyright_name"])}. All rights reserved.</div>'
+        f'<div class="footer-meta">(c) {year} {escape_text(site["copyright_name"])}. Alle rechten voorbehouden.</div>'
     )
 
 
@@ -335,13 +338,13 @@ def render_contact_details(site: dict[str, Any]) -> str:
     if site["email"]:
         address = escape_text(site["email"])
         rows.append(
-            f'<div class="contact-list__row"><span class="contact-list__label">Email</span>'
+            f'<div class="contact-list__row"><span class="contact-list__label">E-mail</span>'
             f'<div class="contact-list__value"><a href="mailto:{address}">{address}</a></div></div>'
         )
 
     if site["phone"]:
         rows.append(
-            f'<div class="contact-list__row"><span class="contact-list__label">Phone</span>'
+            f'<div class="contact-list__row"><span class="contact-list__label">Telefoon</span>'
             f'<div class="contact-list__value">{escape_text(site["phone"])}</div></div>'
         )
 
@@ -373,15 +376,19 @@ def render_featured_cards(artworks: list[dict[str, Any]]) -> str:
             else ""
         )
         cards.append(
-            "<article class=\"featured-card\">"
-            f'<a class="featured-card__link" href="{artwork["url"]}">'
-            f'<div class="featured-card__image"><img src="{artwork["cover_url"]}" alt="{escape_text(artwork["title"])}" loading="eager" decoding="async"></div>'
-            '<div class="featured-card__content">'
-            f'<h3 class="featured-card__title">{escape_text(artwork["title"])}</h3>'
-            f'<p class="featured-card__meta">{escape_text(artwork["type_label"])} / {escape_text(artwork["availability_label"])}</p>'
-            f'<p class="featured-card__excerpt">{escape_text(excerpt(artwork["description"]))}</p>'
-            f"{price_html}"
-            "</div></a></article>"
+            "".join(
+                [
+                    '<article class="featured-card">',
+                    f'<a class="featured-card__link" href="{artwork["url"]}">',
+                    f'<div class="featured-card__image"><img src="{artwork["cover_url"]}" alt="{escape_text(artwork["title"])}" loading="eager" decoding="async"></div>',
+                    '<div class="featured-card__content">',
+                    f'<h3 class="featured-card__title">{escape_text(artwork["title"])} </h3>',
+                    f'<p class="featured-card__meta">{escape_text(artwork["type_label"])} / {escape_text(artwork["availability_label"])} </p>',
+                    f'<p class="featured-card__excerpt">{escape_text(excerpt(artwork["description"]))}</p>',
+                    price_html,
+                    '</div></a></article>',
+                ]
+            )
         )
 
     return "".join(cards)
@@ -390,50 +397,91 @@ def render_featured_cards(artworks: list[dict[str, Any]]) -> str:
 def render_gallery_cards(artworks: list[dict[str, Any]]) -> str:
     cards: list[str] = []
 
-    for artwork in artworks:
+    for index, artwork in enumerate(artworks, start=1):
         price_html = (
             f'<p class="art-card__price">{escape_text(artwork["price_preview"])}</p>'
             if artwork["price_preview"]
             else ""
         )
+        price_value = "" if artwork["price"] is None else f"{artwork['price']:.2f}"
         cards.append(
-            f'<article class="art-card" data-art-card data-type="{artwork["type_key"]}" data-price-band="{artwork["price_band"]}">'
-            f'<a class="art-card__link" href="{artwork["url"]}">'
-            f'<div class="art-card__image"><img src="{artwork["cover_url"]}" alt="{escape_text(artwork["title"])}" loading="lazy" decoding="async"></div>'
-            '<div class="art-card__meta"><div>'
-            f'<h3 class="art-card__title">{escape_text(artwork["title"])}</h3>'
-            f'<p class="art-card__type">{escape_text(artwork["type_label"])}</p>'
-            f'<p class="art-card__availability">{escape_text(artwork["availability_label"])}</p>'
-            "</div>"
-            f"{price_html}"
-            "</div></a></article>"
+            "".join(
+                [
+                    f'<article class="art-card" data-art-card data-type="{artwork["type_key"]}" data-price="{price_value}" data-date-added="{artwork["date_added_sort"]}" data-default-order="{index}">',
+                    f'<a class="art-card__link" href="{artwork["url"]}">',
+                    f'<div class="art-card__image"><img src="{artwork["cover_url"]}" alt="{escape_text(artwork["title"])}" loading="lazy" decoding="async"></div>',
+                    '<div class="art-card__meta"><div>',
+                    f'<h3 class="art-card__title">{escape_text(artwork["title"])} </h3>',
+                    f'<p class="art-card__type">{escape_text(artwork["type_label"])} </p>',
+                    f'<p class="art-card__availability">{escape_text(artwork["availability_label"])} </p>',
+                    '</div>',
+                    price_html,
+                    '</div></a></article>',
+                ]
+            )
         )
 
     return "".join(cards)
 
 
-def render_filter_controls() -> str:
-    type_buttons = [
-        ("all", "All"),
-        ("painting", "Painting"),
-        ("mosaic", "Mosaic"),
-        ("sculpture", "Sculpture"),
-        ("other", "Other"),
-    ]
-    price_buttons = [
-        ("all", "All prices"),
-        ("under-100", "Under EUR 100"),
-        ("100-300", "EUR 100-300"),
-        ("300-700", "EUR 300-700"),
-        ("700-plus", "EUR 700+"),
-    ]
+def round_up(value: float, step: int) -> int:
+    if value <= 0:
+        return step
+    return int(math.ceil(value / step) * step)
 
-    def button_group(group_name: str, label: str, options: list[tuple[str, str]]) -> str:
+
+def price_stats(artworks: list[dict[str, Any]]) -> dict[str, Any]:
+    prices = [artwork["price"] for artwork in artworks if artwork["price"] is not None]
+    if not prices:
+        return {
+            "has_priced_artworks": False,
+            "slider_min": 0,
+            "slider_max": 1000,
+            "slider_step": 10,
+        }
+
+    max_price = max(prices)
+    round_step = 50 if max_price <= 1000 else 100
+    slider_max = max(round_step, round_up(max_price, round_step))
+    slider_step = 5 if slider_max <= 250 else 10 if slider_max <= 1000 else 25
+
+    return {
+        "has_priced_artworks": True,
+        "slider_min": 0,
+        "slider_max": slider_max,
+        "slider_step": slider_step,
+    }
+
+
+def render_filter_controls(artworks: list[dict[str, Any]]) -> str:
+    type_buttons = [
+        ("all", "Alles"),
+        ("painting", "Schilderij"),
+        ("mosaic", "Mozaiek"),
+        ("sculpture", "Sculptuur"),
+        ("other", "Overig"),
+    ]
+    sort_buttons = [
+        ("newest", "Nieuwste eerst"),
+        ("oldest", "Oudste eerst"),
+        ("price-asc", "Prijs laag-hoog"),
+        ("price-desc", "Prijs hoog-laag"),
+    ]
+    stats = price_stats(artworks)
+    disabled_attr = " disabled" if not stats["has_priced_artworks"] else ""
+
+    def button_group(
+        group_name: str,
+        label: str,
+        options: list[tuple[str, str]],
+        default_value: str,
+        data_name: str,
+    ) -> str:
         buttons = "".join(
             (
-                f'<button class="filter-button" type="button" data-filter-button '
+                f'<button class="filter-button" type="button" {data_name} '
                 f'data-filter-group="{group_name}" data-filter-value="{value}" '
-                f'aria-pressed="{str(value == "all").lower()}">{escape_text(text)}</button>'
+                f'aria-pressed="{str(value == default_value).lower()}">{escape_text(text)}</button>'
             )
             for value, text in options
         )
@@ -442,11 +490,44 @@ def render_filter_controls() -> str:
             f'<div class="filter-buttons">{buttons}</div></div>'
         )
 
-    return (
-        '<div class="filter-panel">'
-        f"{button_group('type', 'Type', type_buttons)}"
-        f"{button_group('price', 'Price', price_buttons)}"
-        "</div>"
+    if stats["has_priced_artworks"]:
+        note_html = '<p class="filter-note">Werken zonder prijs blijven zichtbaar zolang het volledige bereik is geselecteerd.</p>'
+    else:
+        note_html = '<p class="filter-note">Voeg prijzen toe in artwork.json om op prijs te filteren of te sorteren.</p>'
+
+    price_controls = "".join(
+        [
+            '<div class="filter-row">',
+            '<div class="filter-label">Prijsbereik</div>',
+            '<div class="price-range">',
+            '<div class="price-range__values">',
+            '<div class="range-chip"><span>Min</span><strong data-price-output="min">EUR 0</strong></div>',
+            f'<div class="range-chip"><span>Max</span><strong data-price-output="max">EUR {stats["slider_max"]}</strong></div>',
+            '</div>',
+            '<div class="slider-group">',
+            '<label class="slider-field">',
+            '<span class="slider-label">Minimumprijs</span>',
+            f'<input class="slider-input" type="range" min="{stats["slider_min"]}" max="{stats["slider_max"]}" value="{stats["slider_min"]}" step="{stats["slider_step"]}" data-price-slider="min"{disabled_attr}>',
+            '</label>',
+            '<label class="slider-field">',
+            '<span class="slider-label">Maximumprijs</span>',
+            f'<input class="slider-input" type="range" min="{stats["slider_min"]}" max="{stats["slider_max"]}" value="{stats["slider_max"]}" step="{stats["slider_step"]}" data-price-slider="max"{disabled_attr}>',
+            '</label>',
+            '</div>',
+            note_html,
+            '</div>',
+            '</div>',
+        ]
+    )
+
+    return "".join(
+        [
+            '<div class="filter-panel">',
+            button_group("type", "Type", type_buttons, "all", "data-filter-button"),
+            price_controls,
+            button_group("sort", "Sorteren", sort_buttons, "newest", "data-sort-button"),
+            '</div>',
+        ]
     )
 
 
@@ -455,18 +536,20 @@ def render_additional_gallery(artwork: dict[str, Any]) -> str:
         return ""
 
     images = "".join(
-        f'<div class="detail-gallery__item"><img src="{image_url}" alt="{escape_text(artwork["title"])} detail view" loading="lazy" decoding="async"></div>'
+        f'<div class="detail-gallery__item"><img src="{image_url}" alt="{escape_text(artwork["title"])} detail" loading="lazy" decoding="async"></div>'
         for image_url in artwork["gallery_urls"]
     )
 
-    return (
-        '<section class="detail-gallery" aria-labelledby="detail-gallery-heading">'
-        '<div class="section-heading">'
-        '<p class="section-kicker">Additional Images</p>'
-        '<h2 id="detail-gallery-heading">More views of the artwork</h2>'
-        "</div>"
-        f'<div class="detail-gallery__grid">{images}</div>'
-        "</section>"
+    return "".join(
+        [
+            '<section class="detail-gallery" aria-labelledby="detail-gallery-heading">',
+            '<div class="section-heading">',
+            '<p class="section-kicker">Meer beelden</p>',
+            '<h2 id="detail-gallery-heading">Extra beelden van het werk</h2>',
+            '</div>',
+            f'<div class="detail-gallery__grid">{images}</div>',
+            '</section>',
+        ]
     )
 
 
@@ -504,7 +587,7 @@ def build_homepage(site: dict[str, Any], artworks: list[dict[str, Any]]) -> None
             "tagline": escape_text(site["tagline"]),
             "intro": escape_text(site["intro"]),
             "featured_cards": render_featured_cards(artworks),
-            "filter_controls": render_filter_controls(),
+            "filter_controls": render_filter_controls(artworks),
             "gallery_cards": render_gallery_cards(artworks),
         },
     )
@@ -524,7 +607,7 @@ def build_homepage(site: dict[str, Any], artworks: list[dict[str, Any]]) -> None
 
 def build_artwork_pages(site: dict[str, Any], artworks: list[dict[str, Any]]) -> None:
     for artwork in artworks:
-        contact_subject = quote(f"Artwork enquiry: {artwork['title']}")
+        contact_subject = quote(f"Vraag over kunstwerk: {artwork['title']}")
         detail_content = render_template(
             "artwork.html",
             {
@@ -538,9 +621,9 @@ def build_artwork_pages(site: dict[str, Any], artworks: list[dict[str, Any]]) ->
                 "artwork_dimensions": escape_text(artwork["dimensions"]),
                 "artwork_description": artwork["description_html"],
                 "contact_url": f"mailto:{escape_text(site['email'])}?subject={contact_subject}",
-                "contact_label": "Contact about this artwork"
+                "contact_label": "Informeer naar dit werk"
                 if artwork["availability_key"] == "available"
-                else "Ask about similar work",
+                else "Vraag naar vergelijkbaar werk",
                 "additional_gallery_section": render_additional_gallery(artwork),
             },
         )
@@ -563,7 +646,7 @@ def build_about_page(site: dict[str, Any]) -> None:
         "about.html",
         {
             "tagline": escape_text(site["tagline"]),
-            "about_content": paragraph_html(site["about"], "Add a short artist bio here."),
+            "about_content": paragraph_html(site["about"], "Voeg hier een korte biografie van de kunstenaar toe."),
             "contact_details": render_contact_details(site),
         },
     )
@@ -573,7 +656,7 @@ def build_about_page(site: dict[str, Any]) -> None:
         wrap_page(
             site,
             current_page="about",
-            page_title=f"About | {site['site_name']}",
+            page_title=f"Over | {site['site_name']}",
             page_description=site["about"],
             body_class="page-about",
             page_content=about_content,

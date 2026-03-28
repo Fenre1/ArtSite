@@ -55,9 +55,12 @@ Example `artwork.json`:
   "additional_images": ["detail.jpg"],
   "featured": false,
   "availability": "available",
+  "date_added": "2026-03-28",
   "sort_order": 10
 }
 ```
+
+`date_added` is required and must use the `YYYY-MM-DD` format so the gallery can sort by newly added work.
 
 ## Site settings
 

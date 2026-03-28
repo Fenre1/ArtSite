@@ -1,14 +1,15 @@
 {
-  "title": "Untitled Study I",
+  "title": "Zonder titel I",
   "slug": "untitled-study-i",
   "type": "other",
   "price": null,
-  "price_label": "Price on request",
-  "dimensions": "Dimensions on request",
-  "description": "Add a short description of the artwork, materials, or story behind the piece.",
+  "price_label": "Prijs op aanvraag",
+  "dimensions": "Afmetingen op aanvraag",
+  "description": "Voeg een korte beschrijving toe van het werk, de materialen of het verhaal achter dit stuk.",
   "cover_image": "WhatsApp Image 2025-01-07 at 21.18.04.jpeg",
   "additional_images": [],
   "featured": true,
   "availability": "available",
+  "date_added": "2025-01-07",
   "sort_order": 1
 }

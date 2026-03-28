@@ -6,6 +6,9 @@ on:
       - main
   workflow_dispatch:
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
 permissions:
   contents: read
   pages: write
@@ -30,7 +33,7 @@ jobs:
           enablement: ${{ secrets.PAGES_ENABLEMENT_TOKEN != '' }}
 
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.12"
 

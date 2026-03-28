@@ -1,14 +1,15 @@
 {
-  "title": "Untitled Study III",
+  "title": "Zonder titel III",
   "slug": "untitled-study-iii",
   "type": "other",
   "price": null,
-  "price_label": "Price on request",
-  "dimensions": "Dimensions on request",
-  "description": "Add a short description of the artwork, materials, or story behind the piece.",
+  "price_label": "Prijs op aanvraag",
+  "dimensions": "Afmetingen op aanvraag",
+  "description": "Voeg een korte beschrijving toe van het werk, de materialen of het verhaal achter dit stuk.",
   "cover_image": "PXL_20260313_165729625.PORTRAIT.jpg",
   "additional_images": [],
   "featured": false,
   "availability": "available",
+  "date_added": "2026-03-13",
   "sort_order": 3
 }
