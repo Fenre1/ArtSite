@@ -555,6 +555,31 @@ select {
   font-size: 0.95rem;
 }
 
+@media (min-width: 360px) and (max-width: 719px) {
+  .gallery-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+  }
+
+  .gallery-grid .art-card__link {
+    padding: 0.85rem;
+  }
+
+  .gallery-grid .art-card__meta {
+    display: block;
+    margin-top: 0.85rem;
+  }
+
+  .gallery-grid .art-card__title {
+    font-size: 1.15rem;
+    line-height: 1.15;
+  }
+
+  .gallery-grid .art-card__price {
+    margin-top: 0.5rem;
+  }
+}
+
 @media (min-width: 720px) {
   .gallery-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
